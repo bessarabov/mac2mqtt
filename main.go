@@ -93,6 +93,16 @@ func setMute(b bool) {
 
 }
 
+func commandSleep() {
+
+	cmd := exec.Command("pmset", "sleepnow")
+
+	_, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
@@ -166,6 +176,14 @@ func listen(client mqtt.Client, topic string) {
 
 			} else {
 				log.Println("Incorrect value")
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/sleep" {
+
+			if string(msg.Payload()) == "sleep" {
+				commandSleep()
 			}
 
 		}
