@@ -16,6 +16,8 @@ import (
 var volume int
 var volumeWasSent bool
 
+var hostname string
+
 func getHostname() string {
 
 	hostname, err := os.Hostname()
@@ -75,18 +77,28 @@ func getMQTTClient() mqtt.Client {
 	opts.SetPassword(password)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
+
+	opts.SetWill(getTopicPrefix()+"/status/alive", "false", 0, false)
+
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
+	token := client.Publish(getTopicPrefix()+"/status/alive", 0, false, "true")
+	token.Wait()
+
 	return client
+}
+
+func getTopicPrefix() string {
+	return "mac2mqtt/" + hostname
 }
 
 func main() {
 	var wg sync.WaitGroup
 
-	hostname := getHostname()
+	hostname = getHostname()
 	log.Println("Hostname:", hostname)
 
 	mqttClient := getMQTTClient()
@@ -101,7 +113,7 @@ func main() {
 
 				// sending to mqtt only values when they are changed
 				if !volumeWasSent || volume != currentVolume {
-					token := mqttClient.Publish("mac2mqtt/"+hostname+"/status/volume", 0, false, strconv.Itoa(currentVolume))
+					token := mqttClient.Publish(getTopicPrefix()+"/status/volume", 0, false, strconv.Itoa(currentVolume))
 					token.Wait()
 					volumeWasSent = true
 					volume = currentVolume
