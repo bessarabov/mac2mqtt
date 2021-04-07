@@ -13,9 +13,6 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-var volume int
-var volumeWasSent bool
-
 var hostname string
 
 func getHostname() string {
@@ -26,12 +23,31 @@ func getHostname() string {
 		log.Fatal(err)
 	}
 
-	// name.local => name
+	// "name.local" => "name"
 	firstPart := strings.Split(hostname, ".")[0]
 
 	// maybe we should remove all symbols, but [a-z0-9_-] ?
 
 	return firstPart
+}
+
+func getMuteStatus() bool {
+	cmd := exec.Command("osascript", "-e", "output muted of (get volume settings)")
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stdoutStr := string(stdout)
+	stdoutStr = strings.TrimSuffix(stdoutStr, "\n")
+
+	b, err := strconv.ParseBool(stdoutStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return b
 }
 
 func getCurrentVolume() int {
@@ -51,6 +67,30 @@ func getCurrentVolume() int {
 	}
 
 	return i
+}
+
+func setVolume(i int) {
+
+	cmd := exec.Command("osascript", "-e", "set volume output volume "+strconv.Itoa(i))
+
+	_, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+// true - turn mute on
+// false - turn mute off
+func setMute(b bool) {
+
+	cmd := exec.Command("osascript", "-e", "set volume output muted "+strconv.FormatBool(b))
+
+	_, err := cmd.Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -88,6 +128,8 @@ func getMQTTClient() mqtt.Client {
 	token := client.Publish(getTopicPrefix()+"/status/alive", 0, false, "true")
 	token.Wait()
 
+	log.Println("Sending 'true' to topic: " + getTopicPrefix() + "/status/alive")
+
 	return client
 }
 
@@ -95,7 +137,54 @@ func getTopicPrefix() string {
 	return "mac2mqtt/" + hostname
 }
 
+func listen(client mqtt.Client, topic string) {
+	client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
+
+		if msg.Topic() == getTopicPrefix()+"/command/volume" {
+
+			i, err := strconv.Atoi(string(msg.Payload()))
+			if err == nil {
+				setVolume(i)
+
+				updateVolume(client)
+				updateMute(client)
+
+			} else {
+				log.Println("Incorrect value")
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/mute" {
+
+			b, err := strconv.ParseBool(string(msg.Payload()))
+			if err == nil {
+				setMute(b)
+
+				updateVolume(client)
+				updateMute(client)
+
+			} else {
+				log.Println("Incorrect value")
+			}
+
+		}
+
+	})
+}
+
+func updateVolume(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/volume", 0, false, strconv.Itoa(getCurrentVolume()))
+	token.Wait()
+}
+
+func updateMute(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/mute", 0, false, strconv.FormatBool(getMuteStatus()))
+	token.Wait()
+}
+
 func main() {
+
 	var wg sync.WaitGroup
 
 	hostname = getHostname()
@@ -103,21 +192,17 @@ func main() {
 
 	mqttClient := getMQTTClient()
 
-	ticker := time.NewTicker(2000 * time.Millisecond)
+	volumeTicker := time.NewTicker(2 * time.Second)
+
+	go listen(mqttClient, getTopicPrefix()+"/command/#")
+
 	wg.Add(1)
 	go func() {
 		for {
 			select {
-			case _ = <-ticker.C:
-				currentVolume := getCurrentVolume()
-
-				// sending to mqtt only values when they are changed
-				if !volumeWasSent || volume != currentVolume {
-					token := mqttClient.Publish(getTopicPrefix()+"/status/volume", 0, false, strconv.Itoa(currentVolume))
-					token.Wait()
-					volumeWasSent = true
-					volume = currentVolume
-				}
+			case _ = <-volumeTicker.C:
+				updateVolume(mqttClient)
+				updateMute(mqttClient)
 			}
 		}
 	}()
