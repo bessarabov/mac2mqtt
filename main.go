@@ -128,14 +128,14 @@ func getMQTTClient() mqtt.Client {
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 
-	opts.SetWill(getTopicPrefix()+"/status/alive", "false", 0, false)
+	opts.SetWill(getTopicPrefix()+"/status/alive", "false", 0, true)
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
-	token := client.Publish(getTopicPrefix()+"/status/alive", 0, false, "true")
+	token := client.Publish(getTopicPrefix()+"/status/alive", 0, true, "true")
 	token.Wait()
 
 	log.Println("Sending 'true' to topic: " + getTopicPrefix() + "/status/alive")
