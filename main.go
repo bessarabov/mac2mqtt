@@ -153,7 +153,8 @@ func listen(client mqtt.Client, topic string) {
 		if msg.Topic() == getTopicPrefix()+"/command/volume" {
 
 			i, err := strconv.Atoi(string(msg.Payload()))
-			if err == nil {
+			if err == nil && i >= 0 && i <= 100 {
+
 				setVolume(i)
 
 				updateVolume(client)
