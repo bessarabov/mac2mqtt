@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +16,44 @@ import (
 )
 
 var hostname string
+
+type config struct {
+	Ip       string `yaml:"mqtt_ip"`
+	Port     string `yaml:"mqtt_port"`
+	User     string `yaml:"mqtt_user"`
+	Password string `yaml:"mqtt_password"`
+}
+
+func (c *config) getConfig() *config {
+
+	configContent, err := ioutil.ReadFile("mac2mqtt.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = yaml.Unmarshal(configContent, c)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if c.Ip == "" {
+		log.Fatal("Must specify mqtt_ip in mac2mqtt.yaml")
+	}
+
+	if c.Port == "" {
+		log.Fatal("Must specify mqtt_port in mac2mqtt.yaml")
+	}
+
+	if c.User == "" {
+		log.Fatal("Must specify mqtt_user in mac2mqtt.yaml")
+	}
+
+	if c.Password == "" {
+		log.Fatal("Must specify mqtt_password in mac2mqtt.yaml")
+	}
+
+	return c
+}
 
 func getHostname() string {
 
@@ -104,7 +144,7 @@ func commandSleep() {
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -115,15 +155,11 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 	log.Printf("Disconnected from MQTT: %v", err)
 }
 
-func getMQTTClient() mqtt.Client {
-	var broker = "..."
-	var port = 1883
-	var username = "..."
-	var password = "..."
+func getMQTTClient(ip, port, user, password string) mqtt.Client {
 
 	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-	opts.SetUsername(username)
+	opts.AddBroker(fmt.Sprintf("tcp://%s:%s", ip, port))
+	opts.SetUsername(user)
 	opts.SetPassword(password)
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
@@ -204,13 +240,15 @@ func updateMute(client mqtt.Client) {
 
 func main() {
 
+	log.Println("Started")
+
+	var c config
+	c.getConfig()
+
 	var wg sync.WaitGroup
 
 	hostname = getHostname()
-	log.Println("Hostname:", hostname)
-
-	mqttClient := getMQTTClient()
-
+	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
 	volumeTicker := time.NewTicker(2 * time.Second)
 
 	go listen(mqttClient, getTopicPrefix()+"/command/#")
@@ -227,5 +265,4 @@ func main() {
 	}()
 
 	wg.Wait()
-	fmt.Println("end")
 }
