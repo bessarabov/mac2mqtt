@@ -149,6 +149,11 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	log.Println("Connected to MQTT")
+
+	token := client.Publish(getTopicPrefix()+"/status/alive", 0, true, "true")
+	token.Wait()
+
+	log.Println("Sending 'true' to topic: " + getTopicPrefix() + "/status/alive")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -170,11 +175,6 @@ func getMQTTClient(ip, port, user, password string) mqtt.Client {
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
-
-	token := client.Publish(getTopicPrefix()+"/status/alive", 0, true, "true")
-	token.Wait()
-
-	log.Println("Sending 'true' to topic: " + getTopicPrefix() + "/status/alive")
 
 	return client
 }
