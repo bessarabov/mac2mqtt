@@ -72,7 +72,7 @@ func getHostname() string {
 }
 
 func getMuteStatus() bool {
-	cmd := exec.Command("osascript", "-e", "output muted of (get volume settings)")
+	cmd := exec.Command("/usr/bin/osascript", "-e", "output muted of (get volume settings)")
 
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -91,7 +91,7 @@ func getMuteStatus() bool {
 }
 
 func getCurrentVolume() int {
-	cmd := exec.Command("osascript", "-e", "output volume of (get volume settings)")
+	cmd := exec.Command("/usr/bin/osascript", "-e", "output volume of (get volume settings)")
 
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -111,7 +111,7 @@ func getCurrentVolume() int {
 
 func setVolume(i int) {
 
-	cmd := exec.Command("osascript", "-e", "set volume output volume "+strconv.Itoa(i))
+	cmd := exec.Command("/usr/bin/osascript", "-e", "set volume output volume "+strconv.Itoa(i))
 
 	_, err := cmd.Output()
 	if err != nil {
@@ -124,7 +124,7 @@ func setVolume(i int) {
 // false - turn mute off
 func setMute(b bool) {
 
-	cmd := exec.Command("osascript", "-e", "set volume output muted "+strconv.FormatBool(b))
+	cmd := exec.Command("/usr/bin/osascript", "-e", "set volume output muted "+strconv.FormatBool(b))
 
 	_, err := cmd.Output()
 	if err != nil {
@@ -154,6 +154,8 @@ var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	token.Wait()
 
 	log.Println("Sending 'true' to topic: " + getTopicPrefix() + "/status/alive")
+
+	listen(client, getTopicPrefix()+"/command/#")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -184,7 +186,8 @@ func getTopicPrefix() string {
 }
 
 func listen(client mqtt.Client, topic string) {
-	client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
+
+	token := client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
 
 		if msg.Topic() == getTopicPrefix()+"/command/volume" {
 
@@ -226,6 +229,11 @@ func listen(client mqtt.Client, topic string) {
 		}
 
 	})
+
+	token.Wait()
+	if token.Error() != nil {
+		log.Printf("Token error: %s\n", token.Error())
+	}
 }
 
 func updateVolume(client mqtt.Client) {
@@ -250,8 +258,6 @@ func main() {
 	hostname = getHostname()
 	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
 	volumeTicker := time.NewTicker(2 * time.Second)
-
-	go listen(mqttClient, getTopicPrefix()+"/command/#")
 
 	wg.Add(1)
 	go func() {
