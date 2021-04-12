@@ -77,8 +77,8 @@ func getHostname() string {
 	return firstPart
 }
 
-func getMuteStatus() bool {
-	cmd := exec.Command("/usr/bin/osascript", "-e", "output muted of (get volume settings)")
+func getCommandOutput(name string, arg ...string) string {
+	cmd := exec.Command(name, arg...)
 
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -88,7 +88,13 @@ func getMuteStatus() bool {
 	stdoutStr := string(stdout)
 	stdoutStr = strings.TrimSuffix(stdoutStr, "\n")
 
-	b, err := strconv.ParseBool(stdoutStr)
+	return stdoutStr
+}
+
+func getMuteStatus() bool {
+	output := getCommandOutput("/usr/bin/osascript", "-e", "output muted of (get volume settings)")
+
+	b, err := strconv.ParseBool(output)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -97,17 +103,9 @@ func getMuteStatus() bool {
 }
 
 func getCurrentVolume() int {
-	cmd := exec.Command("/usr/bin/osascript", "-e", "output volume of (get volume settings)")
+	output := getCommandOutput("/usr/bin/osascript", "-e", "output volume of (get volume settings)")
 
-	stdout, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	stdoutStr := string(stdout)
-	stdoutStr = strings.TrimSuffix(stdoutStr, "\n")
-
-	i, err := strconv.Atoi(stdoutStr)
+	i, err := strconv.Atoi(output)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,38 +113,28 @@ func getCurrentVolume() int {
 	return i
 }
 
-func setVolume(i int) {
-
-	cmd := exec.Command("/usr/bin/osascript", "-e", "set volume output volume "+strconv.Itoa(i))
+func runCommand(name string, arg ...string) {
+	cmd := exec.Command(name, arg...)
 
 	_, err := cmd.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
+}
 
+// from 0 to 100
+func setVolume(i int) {
+	runCommand("/usr/bin/osascript", "-e", "set volume output volume "+strconv.Itoa(i))
 }
 
 // true - turn mute on
 // false - turn mute off
 func setMute(b bool) {
-
-	cmd := exec.Command("/usr/bin/osascript", "-e", "set volume output muted "+strconv.FormatBool(b))
-
-	_, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	runCommand("/usr/bin/osascript", "-e", "set volume output muted "+strconv.FormatBool(b))
 }
 
 func commandSleep() {
-
-	cmd := exec.Command("pmset", "sleepnow")
-
-	_, err := cmd.Output()
-	if err != nil {
-		log.Fatal(err)
-	}
+	runCommand("pmset", "sleepnow")
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -277,4 +265,5 @@ func main() {
 	}()
 
 	wg.Wait()
+
 }
