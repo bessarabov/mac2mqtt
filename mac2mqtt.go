@@ -137,6 +137,10 @@ func commandSleep() {
 	runCommand("pmset", "sleepnow")
 }
 
+func commandDisplaySleep() {
+	runCommand("pmset", "displaysleepnow")
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
@@ -218,6 +222,14 @@ func listen(client mqtt.Client, topic string) {
 
 			if string(msg.Payload()) == "sleep" {
 				commandSleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/displaysleep" {
+
+			if string(msg.Payload()) == "displaysleep" {
+				commandDisplaySleep()
 			}
 
 		}

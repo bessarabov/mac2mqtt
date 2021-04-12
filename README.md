@@ -12,6 +12,7 @@ You can send topics to:
  * change volume
  * mute/unmute
  * put computer to sleep
+ * turn off display
 
 ## Running
 
@@ -70,6 +71,15 @@ And run:
               topic: "mac2mqtt/bessarabov-osx/command/sleep"
               payload: "sleep"
 
+      air2_displaysleep:
+        icon: mdi:laptop
+        sequence:
+          - service: mqtt.publish
+            data:
+              topic: "mac2mqtt/bessarabov-osx/command/displaysleep"
+              payload: "displaysleep"
+
+
     sensor:
       - platform: mqtt
         name: air2_alive
@@ -114,6 +124,13 @@ And run:
                 tap_action:
                   action: call-service
                   service: script.air2_sleep
+              - type: button
+                name: air2
+                entity: script.air2_displaysleep
+                action_name: displaysleep
+                tap_action:
+                  action: call-service
+                  service: script.air2_displaysleep
 
 ## MQTT topics structure
 
@@ -151,3 +168,7 @@ is unmuted.
 ### PREFIX + `/command/sleep`
 
 You can send string `sleep` to this topic. It will put computer to sleep mode. Sending some other value will do nothing.
+
+### PREFIX + `/command/displaysleep`
+
+You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
