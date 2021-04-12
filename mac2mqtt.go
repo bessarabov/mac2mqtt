@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -66,7 +67,12 @@ func getHostname() string {
 	// "name.local" => "name"
 	firstPart := strings.Split(hostname, ".")[0]
 
-	// maybe we should remove all symbols, but [a-z0-9_-] ?
+	// remove all symbols, but [a-zA-Z0-9_-]
+	reg, err := regexp.Compile("[^a-zA-Z0-9_-]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	firstPart = reg.ReplaceAllString(firstPart, "")
 
 	return firstPart
 }
