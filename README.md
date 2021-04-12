@@ -33,22 +33,24 @@ Edit `mac2mqtt.yaml` (the sample file is in this repository), make binary execut
 You need `mac2mqtt.yaml` and `mac2mqtt` to be placed in the directory `/Users/USERNAME/mac2mqtt/`,
 then you need to create file `/Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist`:
 
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-        <dict>
-            <key>Label</key>
-            <string>com.bessarabov.mac2mqtt</string>
-            <key>Program</key>
-            <string>/Users/USERNAME/mac2mqtt/mac2mqtt</string>
-            <key>WorkingDirectory</key>
-            <string>/Users/USERNAME/mac2mqtt/</string>
-            <key>RunAtLoad</key>
-            <true/>
-            <key>KeepAlive</key>
-            <true/>
-        </dict>
-    </plist>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>com.bessarabov.mac2mqtt</string>
+        <key>Program</key>
+        <string>/Users/USERNAME/mac2mqtt/mac2mqtt</string>
+        <key>WorkingDirectory</key>
+        <string>/Users/USERNAME/mac2mqtt/</string>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>KeepAlive</key>
+        <true/>
+    </dict>
+</plist>
+```
 
 And run:
 
