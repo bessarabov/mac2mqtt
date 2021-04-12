@@ -62,75 +62,78 @@ And run:
 
 `configuration.yaml`:
 
-    script:
-      air2_sleep:
-        icon: mdi:laptop
-        sequence:
-          - service: mqtt.publish
-            data:
-              topic: "mac2mqtt/bessarabov-osx/command/sleep"
-              payload: "sleep"
+```yaml
+script:
+  air2_sleep:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/sleep"
+          payload: "sleep"
 
-      air2_displaysleep:
-        icon: mdi:laptop
-        sequence:
-          - service: mqtt.publish
-            data:
-              topic: "mac2mqtt/bessarabov-osx/command/displaysleep"
-              payload: "displaysleep"
+  air2_displaysleep:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/displaysleep"
+          payload: "displaysleep"
 
+sensor:
+  - platform: mqtt
+    name: air2_alive
+    icon: mdi:laptop
+    state_topic: "mac2mqtt/bessarabov-osx/status/alive"
 
-    sensor:
-      - platform: mqtt
-        name: air2_alive
-        icon: mdi:laptop
-        state_topic: "mac2mqtt/bessarabov-osx/status/alive"
+switch:
+  - platform: mqtt
+    name: air2_mute
+    icon: mdi:volume-mute
+    state_topic: "mac2mqtt/bessarabov-osx/status/mute"
+    command_topic: "mac2mqtt/bessarabov-osx/command/mute"
+    payload_on: "true"
+    payload_off: "false"
 
-    switch:
-      - platform: mqtt
-        name: air2_mute
-        icon: mdi:volume-mute
-        state_topic: "mac2mqtt/bessarabov-osx/status/mute"
-        command_topic: "mac2mqtt/bessarabov-osx/command/mute"
-        payload_on: "true"
-        payload_off: "false"
-
-    number:
-      - platform: mqtt
-        name: air2_volume
-        icon: mdi:volume-medium
-        state_topic: "mac2mqtt/bessarabov-osx/status/volume"
-        command_topic: "mac2mqtt/bessarabov-osx/command/volume"
+number:
+  - platform: mqtt
+    name: air2_volume
+    icon: mdi:volume-medium
+    state_topic: "mac2mqtt/bessarabov-osx/status/volume"
+    command_topic: "mac2mqtt/bessarabov-osx/command/volume"
+```
 
 `ui-lovelace.yaml`:
 
+```yaml
+title: Home
+views:
+  - path: default_view
     title: Home
-    views:
-      - path: default_view
-        title: Home
-        cards:
-          - type: entities
-            entities:
-              - sensor.air2_alive
-              - type: 'custom:slider-entity-row'
-                entity: number.air2_volume
-                min: 0
-                max: 100
-              - switch.air2_mute
-              - type: button
-                name: air2
-                entity: script.air2_sleep
-                action_name: sleep
-                tap_action:
-                  action: call-service
-                  service: script.air2_sleep
-              - type: button
-                name: air2
-                entity: script.air2_displaysleep
-                action_name: displaysleep
-                tap_action:
-                  action: call-service
-                  service: script.air2_displaysleep
+    cards:
+      - type: entities
+        entities:
+          - sensor.air2_alive
+          - type: 'custom:slider-entity-row'
+            entity: number.air2_volume
+            min: 0
+            max: 100
+          - switch.air2_mute
+          - type: button
+            name: air2
+            entity: script.air2_sleep
+            action_name: sleep
+            tap_action:
+              action: call-service
+              service: script.air2_sleep
+          - type: button
+            name: air2
+            entity: script.air2_displaysleep
+            action_name: displaysleep
+            tap_action:
+              action: call-service
+              service: script.air2_displaysleep
+```
 
 ## MQTT topics structure
 
