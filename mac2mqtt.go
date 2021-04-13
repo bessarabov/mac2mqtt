@@ -141,6 +141,18 @@ func commandDisplaySleep() {
 	runCommand("pmset", "displaysleepnow")
 }
 
+func commandShutdown() {
+
+	if os.Getuid() == 0 {
+		// if the program is run by root user we are doing the most powerfull shutdown - that always shuts down the computer
+		runCommand("shutdown", "-h", "now")
+	} else {
+		// if the program is run by ordinary user we are trying to shutdown, but it may fail if the other user is logged in
+		runCommand("/usr/bin/osascript", "-e", "tell app \"System Events\" to shut down")
+	}
+
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
@@ -230,6 +242,14 @@ func listen(client mqtt.Client, topic string) {
 
 			if string(msg.Payload()) == "displaysleep" {
 				commandDisplaySleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/shutdown" {
+
+			if string(msg.Payload()) == "shutdown" {
+				commandShutdown()
 			}
 
 		}

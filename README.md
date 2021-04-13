@@ -12,6 +12,7 @@ You can send topics to:
  * change volume
  * mute/unmute
  * put computer to sleep
+ * shutdown computer
  * turn off display
 
 ## Running
@@ -74,6 +75,14 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/sleep"
           payload: "sleep"
 
+  air2_shutdown:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/shutdown"
+          payload: "shutdown"
+
   air2_displaysleep:
     icon: mdi:laptop
     sequence:
@@ -130,6 +139,13 @@ views:
               service: script.air2_sleep
           - type: button
             name: air2
+            entity: script.air2_shutdown
+            action_name: shutdown
+            tap_action:
+              action: call-service
+              service: script.air2_shutdown
+          - type: button
+            name: air2
             entity: script.air2_displaysleep
             action_name: displaysleep
             tap_action:
@@ -173,6 +189,14 @@ is unmuted.
 ### PREFIX + `/command/sleep`
 
 You can send string `sleep` to this topic. It will put computer to sleep mode. Sending some other value will do nothing.
+
+### PREFIX + `/command/shutdown`
+
+You can send string `shutdown` to this topic. It will try to shutdown the computer. The way it is done depends on
+the user who run the program. If the program is run by `root` the computer will shutdown, but if it is run by ordinary user
+the computer will not shut down if there is other user who logged in.
+
+Sending some other value but `shutdown` will do nothing.
 
 ### PREFIX + `/command/displaysleep`
 
