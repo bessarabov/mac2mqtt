@@ -272,6 +272,25 @@ func updateMute(client mqtt.Client) {
 	token.Wait()
 }
 
+func getBatteryChargePercent() string {
+
+	output := getCommandOutput("/usr/bin/pmset", "-g", "batt")
+
+	// $ /usr/bin/pmset -g batt
+	// Now drawing from 'Battery Power'
+	//  -InternalBattery-0 (id=4653155)        100%; discharging; 20:00 remaining present: true
+
+	r := regexp.MustCompile(`(\d+)%`)
+	percent := r.FindStringSubmatch(output)[1]
+
+	return percent
+}
+
+func updateBattery(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/battery", 0, false, getBatteryChargePercent())
+	token.Wait()
+}
+
 func main() {
 
 	log.Println("Started")
@@ -283,7 +302,9 @@ func main() {
 
 	hostname = getHostname()
 	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
+
 	volumeTicker := time.NewTicker(2 * time.Second)
+	batteryTicker := time.NewTicker(1 * time.Second)
 
 	wg.Add(1)
 	go func() {
@@ -292,6 +313,9 @@ func main() {
 			case _ = <-volumeTicker.C:
 				updateVolume(mqttClient)
 				updateMute(mqttClient)
+
+			case _ = <-batteryTicker.C:
+				updateBattery(mqttClient)
 			}
 		}
 	}()

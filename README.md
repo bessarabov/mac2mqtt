@@ -6,6 +6,7 @@ It publish to MQTT:
 
  * current volume
  * volume mute state
+ * battery charge percent
 
 You can send topics to:
 
@@ -97,6 +98,12 @@ sensor:
     icon: mdi:laptop
     state_topic: "mac2mqtt/bessarabov-osx/status/alive"
 
+  - platform: mqtt
+    name: "air2_battery"
+    icon: mdi:battery-high
+    unit_of_measurement: "%"
+    state_topic: "mac2mqtt/bessarabov-osx/status/battery"
+
 switch:
   - platform: mqtt
     name: air2_mute
@@ -125,6 +132,7 @@ views:
       - type: entities
         entities:
           - sensor.air2_alive
+          - sensor.air2_battery
           - type: 'custom:slider-entity-row'
             entity: number.air2_volume
             min: 0
@@ -151,6 +159,12 @@ views:
             tap_action:
               action: call-service
               service: script.air2_displaysleep
+
+      - type: history-graph
+        hours_to_show: 48
+        refresh_interval: 0
+        entities:
+          - sensor.air2_battery
 ```
 
 ## MQTT topics structure
@@ -168,7 +182,7 @@ If `mac2mqtt` is disconnected from MQTT there is `false`. This is the standard M
 
 ### PREFIX + `/status/volume`
 
-The value is the numers from 0 (inclusive) to 100 (inclusive). The current volume of computer.
+The value is the numbers from 0 (inclusive) to 100 (inclusive). The current volume of computer.
 
 The value of this topic is updated every 2 seconds.
 
@@ -176,6 +190,12 @@ The value of this topic is updated every 2 seconds.
 
 There can be `true` of `false` in this topic. `true` means that the computer volume is muted (no sound),
 `false` means that it is not multed.
+
+### PREFIX + `/status/battery`
+
+The value is the nuber up to 100. The charge percent of the battery.
+
+The value of this topic is updated every 60 seconds.
 
 ### PREFIX + `/command/volume`
 
