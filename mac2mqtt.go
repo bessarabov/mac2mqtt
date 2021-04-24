@@ -304,7 +304,7 @@ func main() {
 	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
 
 	volumeTicker := time.NewTicker(2 * time.Second)
-	batteryTicker := time.NewTicker(1 * time.Second)
+	batteryTicker := time.NewTicker(60 * time.Second)
 
 	wg.Add(1)
 	go func() {
