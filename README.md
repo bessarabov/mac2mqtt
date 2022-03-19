@@ -221,3 +221,14 @@ Sending some other value but `shutdown` will do nothing.
 ### PREFIX + `/command/displaysleep`
 
 You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
+
+## Building
+
+To build this program yourself, follow these steps:
+
+1. Clone this repo
+2. Make sure you have installed go, for example with `brew install go`
+3. Install its dependencies with `go install`
+4. Build with `go build mac2mqtt.go`
+
+It outputs a file `mac2mqtt`. Make the binary executable (`chmod +x mac2mqtt`) and run `./mac2mqtt`.
