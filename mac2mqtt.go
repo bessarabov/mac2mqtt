@@ -142,7 +142,7 @@ func commandDisplaySleep() {
 }
 
 func commandDisplayLock() {
-	runCommand("/usr/bin/osascript", "-e", "tell application \"System Events\" to keystroke \"q\" using {control down, command down}")
+	runCommand("/usr/bin/osascript", "-e", "tell application \"System Events\" to tell process \"Finder\" to keystroke \"q\" using {control down, command down}")
 }
 
 func commandDisplayWake() {
