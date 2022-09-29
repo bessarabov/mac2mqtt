@@ -145,6 +145,10 @@ func commandDisplayLock() {
 	runCommand("/usr/bin/osascript", "-e", "tell application \"System Events\" to keystroke \"q\" using {control down, command down}")
 }
 
+func commandDisplayWake() {
+	runCommand("/usr/bin/caffeinate", "-u", "-t", "1")
+}
+
 func commandShutdown() {
 	if os.Getuid() == 0 {
 		// if the program is run by root user we are doing the most powerfull shutdown - that always shuts down the computer
@@ -257,6 +261,14 @@ func listen(client mqtt.Client, topic string) {
 			if string(msg.Payload()) == "displaylock_sleep" {
 				commandDisplayLock()
 				commandDisplaySleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/displaywake" {
+
+			if string(msg.Payload()) == "displaywake" {
+				commandDisplayWake()
 			}
 
 		}
