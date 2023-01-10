@@ -281,9 +281,13 @@ func getBatteryChargePercent() string {
 	//  -InternalBattery-0 (id=4653155)        100%; discharging; 20:00 remaining present: true
 
 	r := regexp.MustCompile(`(\d+)%`)
-	percent := r.FindStringSubmatch(output)[1]
+	res := r.FindStringSubmatch(output)
 
-	return percent
+	if len(res) == 0 {
+		return ""
+	}
+
+	return res[1]
 }
 
 func updateBattery(client mqtt.Client) {
