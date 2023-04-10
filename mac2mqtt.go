@@ -149,6 +149,16 @@ func commandDisplaySleep() {
 	runCommand("pmset", "displaysleepnow")
 }
 
+func commandTidalPlayPause() {
+	runCommand("osascript", "-e", `
+        tell application "System Events"
+            tell process "TIDAL"
+                click menu item 0 of menu "Playback" of menu bar 1
+            end tell
+        end tell
+    `)
+}
+
 func commandShutdown() {
 
 	if os.Getuid() == 0 {
@@ -260,6 +270,10 @@ func listen(client mqtt.Client, topic string) {
 				commandShutdown()
 			}
 
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/tidal/playpause" {
+			commandTidalPlayPause()
 		}
 
 	})
