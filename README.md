@@ -18,47 +18,28 @@ You can send topics to:
 
 ## Running
 
-To run this program you need to put 2 files in a directory (`/Users/USERNAME/mac2mqtt/`):
+To compile and install this program:
 
-    mac2mqtt
-    mac2mqtt.yaml
+- install the [golang toolchain](https://go.dev/doc/install)
+- clone this repository: `git clone ...`
+- set your MQTT credentials in `mac2mqtt.yaml`
+- compile and install: `sh install.sh`
 
-Edit `mac2mqtt.yaml` (the sample file is in this repository), make binary executable (`chmod +x mac2mqtt`) and run `./mac2mqtt`:
+## Testing
 
-    $ ./mac2mqtt
-    2021/04/12 10:37:28 Started
-    2021/04/12 10:37:29 Connected to MQTT
-    2021/04/12 10:37:29 Sending 'true' to topic: mac2mqtt/bessarabov-osx/status/alive
+To run `mac2mqtt` on your command line, disable the system-wide `mac2mqtt` process:
 
-## Running in the background
+    sh uninstall.sh
 
-You need `mac2mqtt.yaml` and `mac2mqtt` to be placed in the directory `/Users/USERNAME/mac2mqtt/`,
-then you need to create file `/Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist`:
+Now you can run `./mac2mqtt` directly from the source directory. It will use the configuration values from `mac2mqtt.yaml` in the current working directory.
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>com.bessarabov.mac2mqtt</string>
-        <key>Program</key>
-        <string>/Users/USERNAME/mac2mqtt/mac2mqtt</string>
-        <key>WorkingDirectory</key>
-        <string>/Users/USERNAME/mac2mqtt/</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-    </dict>
-</plist>
-```
+To rebuild, run:
 
-And run:
+    go build
 
-    launchctl load /Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist
+Once you're finished, resume the system-wide `mac2mqtt` process:
 
-(To stop you need to run `launchctl unload /Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist`)
+    sh install.sh
 
 ## Home Assistant sample config
 
