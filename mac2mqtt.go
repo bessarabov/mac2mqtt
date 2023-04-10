@@ -93,6 +93,9 @@ func getCommandOutput(name string, arg ...string) string {
 
 func getMuteStatus() bool {
 	output := getCommandOutput("/usr/bin/osascript", "-e", "output muted of (get volume settings)")
+	if output == "missing value" {
+		return false
+	}
 
 	b, err := strconv.ParseBool(output)
 	if err != nil {
@@ -104,6 +107,9 @@ func getMuteStatus() bool {
 
 func getCurrentVolume() int {
 	output := getCommandOutput("/usr/bin/osascript", "-e", "output volume of (get volume settings)")
+	if output == "missing value" {
+		return -1
+	}
 
 	i, err := strconv.Atoi(output)
 	if err != nil {
