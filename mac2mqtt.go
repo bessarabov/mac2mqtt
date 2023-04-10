@@ -19,10 +19,12 @@ import (
 var hostname string
 
 type config struct {
-	Ip       string `yaml:"mqtt_ip"`
-	Port     string `yaml:"mqtt_port"`
-	User     string `yaml:"mqtt_user"`
-	Password string `yaml:"mqtt_password"`
+	Ip              string `yaml:"mqtt_ip"`
+	Port            string `yaml:"mqtt_port"`
+	User            string `yaml:"mqtt_user"`
+	Password        string `yaml:"mqtt_password"`
+	VolumeInterval  int    `yaml:"volume_interval"`
+	BatteryInterval int    `yaml:"battery_interval"`
 }
 
 func (c *config) getConfig() *config {
@@ -309,8 +311,8 @@ func main() {
 	hostname = getHostname()
 	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
 
-	volumeTicker := time.NewTicker(2 * time.Second)
-	batteryTicker := time.NewTicker(60 * time.Second)
+	volumeTicker := time.NewTicker(time.Duration(c.VolumeInterval) * time.Second)
+	batteryTicker := time.NewTicker(time.Duration(c.BatteryInterval) * time.Second)
 
 	wg.Add(1)
 	go func() {
