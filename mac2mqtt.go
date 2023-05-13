@@ -153,6 +153,10 @@ func commandShutdown() {
 
 }
 
+func commandRunShortcut(shortcut string) {
+	runCommand("shortcuts", "run", shortcut)
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 }
@@ -252,6 +256,10 @@ func listen(client mqtt.Client, topic string) {
 				commandShutdown()
 			}
 
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/runshortcut" {
+			commandRunShortcut(string(msg.Payload()))
 		}
 
 	})

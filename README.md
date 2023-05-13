@@ -219,6 +219,10 @@ Sending some other value but `shutdown` will do nothing.
 
 You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
 
+### PREFIX + `/command/runshortcut`
+
+You can send the name of a shortcut to this topic. It will run this shortcut in the Shortcuts app.
+
 ## Building
 
 To build this program yourself, follow these steps:
