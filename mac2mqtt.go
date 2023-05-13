@@ -113,6 +113,17 @@ func getCurrentVolume() int {
 	return i
 }
 
+func getCurrentInputVolume() int {
+	input := getCommandOutput("/usr/bin/osascript", "-e", "input volume of (get volume settings)")
+
+	i, err := strconv.Atoi(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return i
+}
+
 func runCommand(name string, arg ...string) {
 	cmd := exec.Command(name, arg...)
 
@@ -125,6 +136,11 @@ func runCommand(name string, arg ...string) {
 // from 0 to 100
 func setVolume(i int) {
 	runCommand("/usr/bin/osascript", "-e", "set volume output volume "+strconv.Itoa(i))
+}
+
+// from 0 to 100
+func setInputVolume(i int) {
+	runCommand("/usr/bin/osascript", "-e", "set volume input volume "+strconv.Itoa(i))
 }
 
 // true - turn mute on
@@ -225,6 +241,22 @@ func listen(client mqtt.Client, topic string) {
 
 		}
 
+		if msg.Topic() == getTopicPrefix()+"/command/input_volume" {
+
+			i, err := strconv.Atoi(string(msg.Payload()))
+			if err == nil && i >= 0 && i <= 100 {
+
+				setInputVolume(i)
+
+				updateInputVolume(client)
+				// updateMute(client)
+
+			} else {
+				log.Println("Incorrect value")
+			}
+
+		}
+
 		if msg.Topic() == getTopicPrefix()+"/command/mute" {
 
 			b, err := strconv.ParseBool(string(msg.Payload()))
@@ -302,6 +334,12 @@ func updateVolume(client mqtt.Client) {
 	token.Wait()
 }
 
+func updateInputVolume(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/input_volume", 0, false, strconv.Itoa(getCurrentInputVolume()))
+	token.Wait()
+}
+
+
 func updateMute(client mqtt.Client) {
 	token := client.Publish(getTopicPrefix()+"/status/mute", 0, false, strconv.FormatBool(getMuteStatus()))
 	token.Wait()
@@ -347,6 +385,7 @@ func main() {
 			select {
 			case _ = <-volumeTicker.C:
 				updateVolume(mqttClient)
+				updateInputVolume(mqttClient)
 				updateMute(mqttClient)
 
 			case _ = <-batteryTicker.C:
