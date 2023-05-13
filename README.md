@@ -203,6 +203,10 @@ You can send integer numberf from 0 (inclusive) to 100 (inclusive) to this topic
 You can send `true` of `false` to this topic. When you send `true` the computer is muted. When you send `false` the computer
 is unmuted.
 
+### PREFIX + `/command/input_volume`
+
+You can send integer numberf from 0 (inclusive) to 100 (inclusive) to this topic. It will set the input volume (usually the microphone) on the computer.
+
 ### PREFIX + `/command/sleep`
 
 You can send string `sleep` to this topic. It will put computer to sleep mode. Sending some other value will do nothing.
