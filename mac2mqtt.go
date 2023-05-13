@@ -141,8 +141,15 @@ func commandDisplaySleep() {
 	runCommand("pmset", "displaysleepnow")
 }
 
-func commandShutdown() {
+func commandDisplayLock() {
+	runCommand("/usr/bin/osascript", "-e", "tell application \"System Events\" to tell process \"Finder\" to keystroke \"q\" using {control down, command down}")
+}
 
+func commandDisplayWake() {
+	runCommand("/usr/bin/caffeinate", "-u", "-t", "1")
+}
+
+func commandShutdown() {
 	if os.Getuid() == 0 {
 		// if the program is run by root user we are doing the most powerfull shutdown - that always shuts down the computer
 		runCommand("shutdown", "-h", "now")
@@ -150,7 +157,6 @@ func commandShutdown() {
 		// if the program is run by ordinary user we are trying to shutdown, but it may fail if the other user is logged in
 		runCommand("/usr/bin/osascript", "-e", "tell app \"System Events\" to shut down")
 	}
-
 }
 
 func commandRunShortcut(shortcut string) {
@@ -246,6 +252,27 @@ func listen(client mqtt.Client, topic string) {
 
 			if string(msg.Payload()) == "displaysleep" {
 				commandDisplaySleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/displaylock" {
+
+			if string(msg.Payload()) == "displaylock" {
+				commandDisplayLock()
+			}
+
+			if string(msg.Payload()) == "displaylock_sleep" {
+				commandDisplayLock()
+				commandDisplaySleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/displaywake" {
+
+			if string(msg.Payload()) == "displaywake" {
+				commandDisplayWake()
 			}
 
 		}

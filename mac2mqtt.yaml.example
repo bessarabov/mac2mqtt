@@ -1,0 +1,6 @@
+# MQTT broker settings
+
+mqtt_ip: *.*.*.*
+mqtt_port: 1883
+mqtt_user: "USERNAME"
+mqtt_password: "PASSWORD"
