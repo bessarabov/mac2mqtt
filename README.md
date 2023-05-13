@@ -219,6 +219,16 @@ Sending some other value but `shutdown` will do nothing.
 
 You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
 
+### PREFIX + `/command/displaywake`
+
+You can send string `displaywake` to this topic. It will turn on display. Sending some other value will do nothing.
+
+### PREFIX + `/command/displaylock`
+
+You can send the string `displaylock` to this topic to lock the screen.
+You can also send the string `displaylock_sleep` to this topic to not only lock the screen but also put the computer to sleep.
+Sending some other value will do nothing.
+
 ### PREFIX + `/command/runshortcut`
 
 You can send the name of a shortcut to this topic. It will run this shortcut in the Shortcuts app.
