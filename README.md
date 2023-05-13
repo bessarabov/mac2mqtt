@@ -49,7 +49,7 @@ Once you're finished, resume the system-wide `mac2mqtt` process:
 
 ```yaml
 script:
-  air2_sleep:
+  mymac_sleep:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -57,7 +57,7 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/sleep"
           payload: "sleep"
 
-  air2_shutdown:
+  mymac_shutdown:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -65,7 +65,7 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/shutdown"
           payload: "shutdown"
 
-  air2_displaysleep:
+  mymac_displaysleep:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -75,17 +75,17 @@ script:
 
 mqtt:
   sensor:
-    - name: air2_alive
+    - name: mymac_alive
       icon: mdi:laptop
       state_topic: "mac2mqtt/bessarabov-osx/status/alive"
 
-    - name: "air2_battery"
+    - name: "mymac_battery"
       icon: mdi:battery-high
       unit_of_measurement: "%"
       state_topic: "mac2mqtt/bessarabov-osx/status/battery"
 
   switch:
-    - name: air2_mute
+    - name: mymac_mute
       icon: mdi:volume-mute
       state_topic: "mac2mqtt/bessarabov-osx/status/mute"
       command_topic: "mac2mqtt/bessarabov-osx/command/mute"
@@ -93,7 +93,7 @@ mqtt:
       payload_off: "false"
 
   number:
-    - name: air2_volume
+    - name: mymac_volume
       icon: mdi:volume-medium
       state_topic: "mac2mqtt/bessarabov-osx/status/volume"
       command_topic: "mac2mqtt/bessarabov-osx/command/volume"
@@ -109,40 +109,40 @@ views:
     cards:
       - type: entities
         entities:
-          - sensor.air2_alive
-          - sensor.air2_battery
+          - sensor.mymac_alive
+          - sensor.mymac_battery
           - type: 'custom:slider-entity-row'
-            entity: number.air2_volume
+            entity: number.mymac_volume
             min: 0
             max: 100
-          - switch.air2_mute
+          - switch.mymac_mute
           - type: button
-            name: air2
-            entity: script.air2_sleep
+            name: mymac
+            entity: script.mymac_sleep
             action_name: sleep
             tap_action:
               action: call-service
-              service: script.air2_sleep
+              service: script.mymac_sleep
           - type: button
-            name: air2
-            entity: script.air2_shutdown
+            name: mymac
+            entity: script.mymac_shutdown
             action_name: shutdown
             tap_action:
               action: call-service
-              service: script.air2_shutdown
+              service: script.mymac_shutdown
           - type: button
-            name: air2
-            entity: script.air2_displaysleep
+            name: mymac
+            entity: script.mymac_displaysleep
             action_name: displaysleep
             tap_action:
               action: call-service
-              service: script.air2_displaysleep
+              service: script.mymac_displaysleep
 
       - type: history-graph
         hours_to_show: 48
         refresh_interval: 0
         entities:
-          - sensor.air2_battery
+          - sensor.mymac_battery
 ```
 
 ## MQTT topics structure
