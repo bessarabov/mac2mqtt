@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -11,25 +9,31 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v2"
 )
 
 var hostname string
 
 type config struct {
-	Ip              string `yaml:"mqtt_ip"`
-	Port            string `yaml:"mqtt_port"`
-	User            string `yaml:"mqtt_user"`
-	Password        string `yaml:"mqtt_password"`
-	VolumeInterval  int    `yaml:"volume_interval"`
-	BatteryInterval int    `yaml:"battery_interval"`
+	IP                string `yaml:"mqtt_ip"`
+	Port              string `yaml:"mqtt_port"`
+	User              string `yaml:"mqtt_user"`
+	Password          string `yaml:"mqtt_password"`
+	VolumeInterval    int    `yaml:"volume_interval"`
+	BatteryInterval   int    `yaml:"battery_interval"`
+	IdleTimerInterval int    `yaml:"idle_timer_interval"`
+	UptimeInterval    int    `yaml:"uptime_interval"`
 }
 
 func (c *config) getConfig() *config {
 
-	configContent, err := ioutil.ReadFile("mac2mqtt.yaml")
+	configContent, err := os.ReadFile("mac2mqtt.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,7 +43,7 @@ func (c *config) getConfig() *config {
 		log.Fatal(err)
 	}
 
-	if c.Ip == "" {
+	if c.IP == "" {
 		log.Fatal("Must specify mqtt_ip in mac2mqtt.yaml")
 	}
 
@@ -130,6 +134,39 @@ func getCurrentInputVolume() int {
 	}
 
 	return i
+}
+
+// Returns HID idle time in ms
+func getComputerIdleTime() int {
+	input := getCommandOutput("/usr/sbin/ioreg",
+		"-c",
+		"IOHIDSystem")
+
+	re := regexp.MustCompile(`.*"HIDIdleTime" = (?P<Time>\d+)`)
+	matches := re.FindStringSubmatch(input)
+	uptime := re.SubexpIndex("Time")
+
+	i, err := strconv.Atoi(matches[uptime])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return i / 1000000
+}
+
+func getComputerUptime() int64 {
+
+	out, err := unix.SysctlRaw("kern.boottime")
+	if err != nil {
+		return time.Duration(0).Milliseconds()
+	}
+	var timeval syscall.Timeval
+	timeval = *(*syscall.Timeval)(unsafe.Pointer(&out[0]))
+	sec, nsec := timeval.Unix()
+	ms := time.Now().Sub(time.Unix(sec, nsec)).Milliseconds()
+	fmt.Println(ms)
+	return ms
+
 }
 
 func runCommand(name string, arg ...string) {
@@ -347,7 +384,6 @@ func updateInputVolume(client mqtt.Client) {
 	token.Wait()
 }
 
-
 func updateMute(client mqtt.Client) {
 	token := client.Publish(getTopicPrefix()+"/status/mute", 0, false, strconv.FormatBool(getMuteStatus()))
 	token.Wait()
@@ -372,6 +408,16 @@ func updateBattery(client mqtt.Client) {
 	token.Wait()
 }
 
+func updateIdleTimer(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/idle", 0, false, strconv.Itoa(getComputerIdleTime()))
+	token.Wait()
+}
+
+func updateUptime(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/uptime", 0, false, strconv.FormatInt(getComputerUptime(), 10))
+	token.Wait()
+}
+
 func main() {
 
 	log.Println("Started")
@@ -382,10 +428,12 @@ func main() {
 	var wg sync.WaitGroup
 
 	hostname = getHostname()
-	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
+	mqttClient := getMQTTClient(c.IP, c.Port, c.User, c.Password)
 
 	volumeTicker := time.NewTicker(time.Duration(c.VolumeInterval) * time.Second)
 	batteryTicker := time.NewTicker(time.Duration(c.BatteryInterval) * time.Second)
+	idleTicker := time.NewTicker(time.Duration(c.IdleTimerInterval) * time.Second)
+	uptimeTicker := time.NewTicker(time.Duration(c.UptimeInterval) * time.Second)
 
 	wg.Add(1)
 	go func() {
@@ -395,9 +443,17 @@ func main() {
 				updateVolume(mqttClient)
 				updateInputVolume(mqttClient)
 				updateMute(mqttClient)
+				log.Println("volume ticker")
 
 			case _ = <-batteryTicker.C:
 				updateBattery(mqttClient)
+				log.Println("battery ticker")
+			case _ = <-idleTicker.C:
+				updateIdleTimer(mqttClient)
+				log.Println("idle ticker")
+			case _ = <-uptimeTicker.C:
+				log.Println("uptime ticker")
+				updateUptime(mqttClient)
 			}
 		}
 	}()
