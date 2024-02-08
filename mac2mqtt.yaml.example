@@ -1,0 +1,14 @@
+# MQTT broker settings
+
+mqtt_ip:
+mqtt_port: 1883
+mqtt_user:
+mqtt_password:
+
+# Status message intervals (seconds)
+
+volume_interval: 2
+battery_interval: 60
+uptime_interval: 120
+idle_timer_interval: 15
+

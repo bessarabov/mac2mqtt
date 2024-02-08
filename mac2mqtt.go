@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -11,23 +9,31 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v2"
 )
 
 var hostname string
 
 type config struct {
-	Ip       string `yaml:"mqtt_ip"`
-	Port     string `yaml:"mqtt_port"`
-	User     string `yaml:"mqtt_user"`
-	Password string `yaml:"mqtt_password"`
+	IP                string `yaml:"mqtt_ip"`
+	Port              string `yaml:"mqtt_port"`
+	User              string `yaml:"mqtt_user"`
+	Password          string `yaml:"mqtt_password"`
+	VolumeInterval    int    `yaml:"volume_interval"`
+	BatteryInterval   int    `yaml:"battery_interval"`
+	IdleTimerInterval int    `yaml:"idle_timer_interval"`
+	UptimeInterval    int    `yaml:"uptime_interval"`
 }
 
 func (c *config) getConfig() *config {
 
-	configContent, err := ioutil.ReadFile("mac2mqtt.yaml")
+	configContent, err := os.ReadFile("mac2mqtt.yaml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,7 +43,7 @@ func (c *config) getConfig() *config {
 		log.Fatal(err)
 	}
 
-	if c.Ip == "" {
+	if c.IP == "" {
 		log.Fatal("Must specify mqtt_ip in mac2mqtt.yaml")
 	}
 
@@ -93,6 +99,9 @@ func getCommandOutput(name string, arg ...string) string {
 
 func getMuteStatus() bool {
 	output := getCommandOutput("/usr/bin/osascript", "-e", "output muted of (get volume settings)")
+	if output == "missing value" {
+		return false
+	}
 
 	b, err := strconv.ParseBool(output)
 	if err != nil {
@@ -104,6 +113,9 @@ func getMuteStatus() bool {
 
 func getCurrentVolume() int {
 	output := getCommandOutput("/usr/bin/osascript", "-e", "output volume of (get volume settings)")
+	if output == "missing value" {
+		return -1
+	}
 
 	i, err := strconv.Atoi(output)
 	if err != nil {
@@ -111,6 +123,50 @@ func getCurrentVolume() int {
 	}
 
 	return i
+}
+
+func getCurrentInputVolume() int {
+	input := getCommandOutput("/usr/bin/osascript", "-e", "input volume of (get volume settings)")
+
+	i, err := strconv.Atoi(input)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return i
+}
+
+// Returns HID idle time in ms
+func getComputerIdleTime() int {
+	input := getCommandOutput("/usr/sbin/ioreg",
+		"-c",
+		"IOHIDSystem")
+
+	re := regexp.MustCompile(`.*"HIDIdleTime" = (?P<Time>\d+)`)
+	matches := re.FindStringSubmatch(input)
+	uptime := re.SubexpIndex("Time")
+
+	i, err := strconv.Atoi(matches[uptime])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return i / 1000000
+}
+
+func getComputerUptime() int64 {
+
+	out, err := unix.SysctlRaw("kern.boottime")
+	if err != nil {
+		return time.Duration(0).Milliseconds()
+	}
+	var timeval syscall.Timeval
+	timeval = *(*syscall.Timeval)(unsafe.Pointer(&out[0]))
+	sec, nsec := timeval.Unix()
+	ms := time.Now().Sub(time.Unix(sec, nsec)).Milliseconds()
+	fmt.Println(ms)
+	return ms
+
 }
 
 func runCommand(name string, arg ...string) {
@@ -127,6 +183,11 @@ func setVolume(i int) {
 	runCommand("/usr/bin/osascript", "-e", "set volume output volume "+strconv.Itoa(i))
 }
 
+// from 0 to 100
+func setInputVolume(i int) {
+	runCommand("/usr/bin/osascript", "-e", "set volume input volume "+strconv.Itoa(i))
+}
+
 // true - turn mute on
 // false - turn mute off
 func setMute(b bool) {
@@ -141,8 +202,15 @@ func commandDisplaySleep() {
 	runCommand("pmset", "displaysleepnow")
 }
 
-func commandShutdown() {
+func commandDisplayLock() {
+	runCommand("/usr/bin/osascript", "-e", "tell application \"System Events\" to tell process \"Finder\" to keystroke \"q\" using {control down, command down}")
+}
 
+func commandDisplayWake() {
+	runCommand("/usr/bin/caffeinate", "-u", "-t", "1")
+}
+
+func commandShutdown() {
 	if os.Getuid() == 0 {
 		// if the program is run by root user we are doing the most powerfull shutdown - that always shuts down the computer
 		runCommand("shutdown", "-h", "now")
@@ -150,7 +218,10 @@ func commandShutdown() {
 		// if the program is run by ordinary user we are trying to shutdown, but it may fail if the other user is logged in
 		runCommand("/usr/bin/osascript", "-e", "tell app \"System Events\" to shut down")
 	}
+}
 
+func commandRunShortcut(shortcut string) {
+	runCommand("shortcuts", "run", shortcut)
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -215,6 +286,22 @@ func listen(client mqtt.Client, topic string) {
 
 		}
 
+		if msg.Topic() == getTopicPrefix()+"/command/input_volume" {
+
+			i, err := strconv.Atoi(string(msg.Payload()))
+			if err == nil && i >= 0 && i <= 100 {
+
+				setInputVolume(i)
+
+				updateInputVolume(client)
+				// updateMute(client)
+
+			} else {
+				log.Println("Incorrect value")
+			}
+
+		}
+
 		if msg.Topic() == getTopicPrefix()+"/command/mute" {
 
 			b, err := strconv.ParseBool(string(msg.Payload()))
@@ -246,12 +333,37 @@ func listen(client mqtt.Client, topic string) {
 
 		}
 
+		if msg.Topic() == getTopicPrefix()+"/command/displaylock" {
+
+			if string(msg.Payload()) == "displaylock" {
+				commandDisplayLock()
+			}
+
+			if string(msg.Payload()) == "displaylock_sleep" {
+				commandDisplayLock()
+				commandDisplaySleep()
+			}
+
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/displaywake" {
+
+			if string(msg.Payload()) == "displaywake" {
+				commandDisplayWake()
+			}
+
+		}
+
 		if msg.Topic() == getTopicPrefix()+"/command/shutdown" {
 
 			if string(msg.Payload()) == "shutdown" {
 				commandShutdown()
 			}
 
+		}
+
+		if msg.Topic() == getTopicPrefix()+"/command/runshortcut" {
+			commandRunShortcut(string(msg.Payload()))
 		}
 
 	})
@@ -264,6 +376,11 @@ func listen(client mqtt.Client, topic string) {
 
 func updateVolume(client mqtt.Client) {
 	token := client.Publish(getTopicPrefix()+"/status/volume", 0, false, strconv.Itoa(getCurrentVolume()))
+	token.Wait()
+}
+
+func updateInputVolume(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/input_volume", 0, false, strconv.Itoa(getCurrentInputVolume()))
 	token.Wait()
 }
 
@@ -291,6 +408,16 @@ func updateBattery(client mqtt.Client) {
 	token.Wait()
 }
 
+func updateIdleTimer(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/idle", 0, false, strconv.Itoa(getComputerIdleTime()))
+	token.Wait()
+}
+
+func updateUptime(client mqtt.Client) {
+	token := client.Publish(getTopicPrefix()+"/status/uptime", 0, false, strconv.FormatInt(getComputerUptime(), 10))
+	token.Wait()
+}
+
 func main() {
 
 	log.Println("Started")
@@ -301,10 +428,12 @@ func main() {
 	var wg sync.WaitGroup
 
 	hostname = getHostname()
-	mqttClient := getMQTTClient(c.Ip, c.Port, c.User, c.Password)
+	mqttClient := getMQTTClient(c.IP, c.Port, c.User, c.Password)
 
-	volumeTicker := time.NewTicker(2 * time.Second)
-	batteryTicker := time.NewTicker(60 * time.Second)
+	volumeTicker := time.NewTicker(time.Duration(c.VolumeInterval) * time.Second)
+	batteryTicker := time.NewTicker(time.Duration(c.BatteryInterval) * time.Second)
+	idleTicker := time.NewTicker(time.Duration(c.IdleTimerInterval) * time.Second)
+	uptimeTicker := time.NewTicker(time.Duration(c.UptimeInterval) * time.Second)
 
 	wg.Add(1)
 	go func() {
@@ -312,10 +441,19 @@ func main() {
 			select {
 			case _ = <-volumeTicker.C:
 				updateVolume(mqttClient)
+				updateInputVolume(mqttClient)
 				updateMute(mqttClient)
+				log.Println("volume ticker")
 
 			case _ = <-batteryTicker.C:
 				updateBattery(mqttClient)
+				log.Println("battery ticker")
+			case _ = <-idleTicker.C:
+				updateIdleTimer(mqttClient)
+				log.Println("idle ticker")
+			case _ = <-uptimeTicker.C:
+				log.Println("uptime ticker")
+				updateUptime(mqttClient)
 			}
 		}
 	}()

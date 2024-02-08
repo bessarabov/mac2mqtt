@@ -1,64 +1,49 @@
 # mac2mqtt
 
-`mac2mqtt` is a program that allow viewing and controlling some aspects of computers running macOS via MQTT.
+`mac2mqtt` is a program that allows viewing and controlling some aspects of computers running macOS via MQTT.
 
-It publish to MQTT:
+It publishes to MQTT:
 
- * current volume
- * volume mute state
- * battery charge percent
+* Current input/output volume
+* Volume mute state
+* Battery charge percent
 
 You can send topics to:
 
- * change volume
- * mute/unmute
- * put computer to sleep
- * shutdown computer
- * turn off display
+* Change the input/output volume
+* Mute/Unmute
+* Put the computer to sleep
+* Lock the computer
+* Put the computer to sleep
+* Lock and put the computer to sleep
+* Shut down the computer
+* Turn on/off the display
+* Trigger any Shortcut
 
 ## Running
 
-To run this program you need to put 2 files in a directory (`/Users/USERNAME/mac2mqtt/`):
+To compile and install this program:
 
-    mac2mqtt
-    mac2mqtt.yaml
+- Install the [golang toolchain](https://go.dev/doc/install)
+- Clone this repository: `git clone ...`
+- Set your MQTT credentials in `mac2mqtt.yaml`
+- Compile and install: `sh install.sh`
 
-Edit `mac2mqtt.yaml` (the sample file is in this repository), make binary executable (`chmod +x mac2mqtt`) and run `./mac2mqtt`:
+## Testing
 
-    $ ./mac2mqtt
-    2021/04/12 10:37:28 Started
-    2021/04/12 10:37:29 Connected to MQTT
-    2021/04/12 10:37:29 Sending 'true' to topic: mac2mqtt/bessarabov-osx/status/alive
+To run `mac2mqtt` on your command line, disable the system-wide `mac2mqtt` process:
 
-## Running in the background
+    sh uninstall.sh
 
-You need `mac2mqtt.yaml` and `mac2mqtt` to be placed in the directory `/Users/USERNAME/mac2mqtt/`,
-then you need to create file `/Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist`:
+Now you can run `./mac2mqtt` directly from the source directory. It will use the configuration values from `mac2mqtt.yaml` in the current working directory.
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-    <dict>
-        <key>Label</key>
-        <string>com.bessarabov.mac2mqtt</string>
-        <key>Program</key>
-        <string>/Users/USERNAME/mac2mqtt/mac2mqtt</string>
-        <key>WorkingDirectory</key>
-        <string>/Users/USERNAME/mac2mqtt/</string>
-        <key>RunAtLoad</key>
-        <true/>
-        <key>KeepAlive</key>
-        <true/>
-    </dict>
-</plist>
-```
+To rebuild, run:
 
-And run:
+    go build
 
-    launchctl load /Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist
+Once you're finished, resume the system-wide `mac2mqtt` process:
 
-(To stop you need to run `launchctl unload /Library/LaunchDaemons/com.bessarabov.mac2mqtt.plist`)
+    sh install.sh
 
 ## Home Assistant sample config
 
@@ -68,7 +53,7 @@ And run:
 
 ```yaml
 script:
-  air2_sleep:
+  mymac_sleep:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -76,7 +61,7 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/sleep"
           payload: "sleep"
 
-  air2_shutdown:
+  mymac_shutdown:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -84,7 +69,7 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/shutdown"
           payload: "shutdown"
 
-  air2_displaysleep:
+  mymac_displaysleep:
     icon: mdi:laptop
     sequence:
       - service: mqtt.publish
@@ -92,33 +77,62 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/displaysleep"
           payload: "displaysleep"
 
-sensor:
-  - platform: mqtt
-    name: air2_alive
+  mymac_displaywake:
     icon: mdi:laptop
-    state_topic: "mac2mqtt/bessarabov-osx/status/alive"
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/displaywake"
+          payload: "displaywake"
 
-  - platform: mqtt
-    name: "air2_battery"
-    icon: mdi:battery-high
-    unit_of_measurement: "%"
-    state_topic: "mac2mqtt/bessarabov-osx/status/battery"
+  mymac_displaylock:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/displaylock"
+          payload: "displaylock"
 
-switch:
-  - platform: mqtt
-    name: air2_mute
-    icon: mdi:volume-mute
-    state_topic: "mac2mqtt/bessarabov-osx/status/mute"
-    command_topic: "mac2mqtt/bessarabov-osx/command/mute"
-    payload_on: "true"
-    payload_off: "false"
+  mymac_displaylock_sleep:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/displaylock"
+          payload: "displaylock_sleep"
 
-number:
-  - platform: mqtt
-    name: air2_volume
-    icon: mdi:volume-medium
-    state_topic: "mac2mqtt/bessarabov-osx/status/volume"
-    command_topic: "mac2mqtt/bessarabov-osx/command/volume"
+  mymac_runshortcut:
+    icon: mdi:laptop
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "mac2mqtt/bessarabov-osx/command/runshortcut"
+          payload: "shortcut_name"
+
+mqtt:
+  sensor:
+    - name: mymac_alive
+      icon: mdi:laptop
+      state_topic: "mac2mqtt/bessarabov-osx/status/alive"
+
+    - name: "mymac_battery"
+      icon: mdi:battery-high
+      unit_of_measurement: "%"
+      state_topic: "mac2mqtt/bessarabov-osx/status/battery"
+
+  switch:
+    - name: mymac_mute
+      icon: mdi:volume-mute
+      state_topic: "mac2mqtt/bessarabov-osx/status/mute"
+      command_topic: "mac2mqtt/bessarabov-osx/command/mute"
+      payload_on: "true"
+      payload_off: "false"
+
+  number:
+    - name: mymac_volume
+      icon: mdi:volume-medium
+      state_topic: "mac2mqtt/bessarabov-osx/status/volume"
+      command_topic: "mac2mqtt/bessarabov-osx/command/volume"
 ```
 
 `ui-lovelace.yaml`:
@@ -131,93 +145,133 @@ views:
     cards:
       - type: entities
         entities:
-          - sensor.air2_alive
-          - sensor.air2_battery
+          - sensor.mymac_alive
+          - sensor.mymac_battery
           - type: 'custom:slider-entity-row'
-            entity: number.air2_volume
+            entity: number.mymac_volume
             min: 0
             max: 100
-          - switch.air2_mute
+          - switch.mymac_mute
+          - type: 'custom:slider-entity-row'
+            entity: number.mymac_volume
+            min: 0
+            max: 100
           - type: button
-            name: air2
-            entity: script.air2_sleep
+            name: mymac
+            entity: script.mymac_sleep
             action_name: sleep
             tap_action:
               action: call-service
-              service: script.air2_sleep
+              service: script.mymac_sleep
           - type: button
-            name: air2
-            entity: script.air2_shutdown
+            name: mymac
+            entity: script.mymac_shutdown
             action_name: shutdown
             tap_action:
               action: call-service
-              service: script.air2_shutdown
+              service: script.mymac_shutdown
           - type: button
-            name: air2
-            entity: script.air2_displaysleep
+            name: mymac
+            entity: script.mymac_displaysleep
             action_name: displaysleep
             tap_action:
               action: call-service
-              service: script.air2_displaysleep
+              service: script.mymac_displaysleep
 
       - type: history-graph
         hours_to_show: 48
         refresh_interval: 0
         entities:
-          - sensor.air2_battery
+          - sensor.mymac_battery
 ```
 
 ## MQTT topics structure
 
-Program is working with several MQTT topics. All topix are prefixed with `mac2mqtt` + `COMPUTER_NAME`.
-For examaple, topic with current volume on my machine is `mac2mqtt/bessarabov-osx/status/volume`
+Program is working with several MQTT topics. All topics are prefixed with `mac2mqtt` + `COMPUTER_NAME`.
+
+For example, this topic with the current volume on my machine is `mac2mqtt/bessarabov-osx/status/volume`
 
 `mac2mqtt` send info to the topics `mac2mqtt/COMPUTER_NAME/status/#` and listen for commands in topics
 `mac2mqtt/COMPUTER_NAME/command/#`.
 
 ### PREFIX + `/status/alive`
 
-There can be `true` of `false` in this topic. If `mac2mqtt` is connected to MQTT server there is `true`.
+There can be `true` or `false` in this topic. If `mac2mqtt` is connected to MQTT server there is `true`.
+
 If `mac2mqtt` is disconnected from MQTT there is `false`. This is the standard MQTT thing called Last Will and Testament.
 
 ### PREFIX + `/status/volume`
 
-The value is the numbers from 0 (inclusive) to 100 (inclusive). The current volume of computer.
+The value is the numbers from 0 (inclusive) to 100 (inclusive). The current volume of the computer.
 
-The value of this topic is updated every 2 seconds.
+The value of this topic is updated every 2 seconds by default (see YAML config).
 
 ### PREFIX + `/status/mute`
 
-There can be `true` of `false` in this topic. `true` means that the computer volume is muted (no sound),
-`false` means that it is not multed.
+There can be `true` or `false` in this topic. `true` means that the computer volume is muted (no sound), `false` means that it is not muted.
+
+### PREFIX + `/status/input_volume`
+
+The value is a number from 0 (inclusive) to 100 (inclusive). The current input volume of the computer (usually the microphone).
+
+The value of this topic is updated every 2 seconds by default (see YAML config).
 
 ### PREFIX + `/status/battery`
 
-The value is the nuber up to 100. The charge percent of the battery.
+The value is the number up to 100. The charge percent of the battery.
 
-The value of this topic is updated every 60 seconds.
+The value of this topic is updated every 60 seconds by default (see YAML config).
 
 ### PREFIX + `/command/volume`
 
-You can send integer numberf from 0 (inclusive) to 100 (inclusive) to this topic. It will set the volume on the computer.
+You can send an integer number from 0 (inclusive) to 100 (inclusive) to this topic. It will set the volume on the computer.
 
 ### PREFIX + `/command/mute`
 
-You can send `true` of `false` to this topic. When you send `true` the computer is muted. When you send `false` the computer
+You can send `true` or `false` to this topic. When you send `true` the computer is muted. When you send `false` the computer
 is unmuted.
+
+### PREFIX + `/command/input_volume`
+
+You can send an integer number from 0 (inclusive) to 100 (inclusive) to this topic. It will set the input volume (usually the microphone) on the computer.
 
 ### PREFIX + `/command/sleep`
 
-You can send string `sleep` to this topic. It will put computer to sleep mode. Sending some other value will do nothing.
+You can send string `sleep` to this topic. It will put the computer to sleep mode. Sending some other value will do nothing.
 
 ### PREFIX + `/command/shutdown`
 
-You can send string `shutdown` to this topic. It will try to shutdown the computer. The way it is done depends on
-the user who run the program. If the program is run by `root` the computer will shutdown, but if it is run by ordinary user
-the computer will not shut down if there is other user who logged in.
+You can send the string `shutdown` to this topic. It will try to shut down the computer. The way it is done depends on the user who runs the program. If the program is run by `root` the computer will shut down, but if it is run by an ordinary user the computer will not shut down if there is another user who logged in.
 
 Sending some other value but `shutdown` will do nothing.
 
 ### PREFIX + `/command/displaysleep`
 
-You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
+You can send string `displaysleep` to this topic. It will turn off the display. Sending some other value will do nothing.
+
+### PREFIX + `/command/displaywake`
+
+You can send string `displaywake` to this topic. It will turn on the display. Sending some other value will do nothing.
+
+### PREFIX + `/command/displaylock`
+
+You can send the string `displaylock` to this topic to lock the screen.
+
+You can also send the string `displaylock_sleep` to this topic to not only lock the screen but also put the computer to sleep.
+
+Sending some other value will do nothing.
+
+### PREFIX + `/command/runshortcut`
+
+You can send the name of a shortcut to this topic. It will run this shortcut in the Shortcuts app.
+
+## Building
+
+To build this program yourself, follow these steps:
+
+1. Clone this repo
+2. Make sure you have installed `go`, for example with `brew install go`
+3. Install its dependencies with `go install`
+4. Build with `go build mac2mqtt.go`
+
+It outputs a file `mac2mqtt`. Make the binary executable (`chmod +x mac2mqtt`) and run `./mac2mqtt`.
