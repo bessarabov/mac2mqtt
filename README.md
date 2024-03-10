@@ -21,7 +21,7 @@ You can send commands to MQTT to:
 
 To control macOS via MQTT using this project you need several elements:
 
- * File `mac2mqtt` with compiled program (also known as 'binary' or 'executable)
+ * File `mac2mqtt` with compiled program (also known as 'binary' or 'executable')
  * File with configuration `mac2mqtt.yaml`. You need to write this file yourself, but you can use file `mac2mqtt.yaml` stored in this repository as a base
  * Some system that will start `mac2mqtt` automatically after macOS is restarted, you can also run `mac2mqtt` without this system, but you will need to start it manually after you restart macOS
  * MQTT server (it is often called MQTT Broker)
