@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+
+
+      - name: Build arm64 (Apple Silicon Macs)
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o mac2mqtt_${{ github.ref_name }}_arm64 .
+
+      - name: Build x86_64 (Intel-based Macs)
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o mac2mqtt_${{ github.ref_name }}_x86_64 .
+
+
+      - name: Create release_description.txt
+        run: |
+          ./.github/workflows/create_github_release_description.pl ${{ github.ref_name }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_description.txt
+          files: |
+            mac2mqtt_${{ github.ref_name }}_x86_64
+            mac2mqtt_${{ github.ref_name }}_arm64
