@@ -7,8 +7,9 @@ It publish to MQTT:
  * current volume
  * volume mute state
  * battery charge percent
+ * if macOS is connected to MQTT
 
-You can send topics to:
+You can send commands to MQTT to:
 
  * change volume
  * mute/unmute
@@ -16,14 +17,62 @@ You can send topics to:
  * shutdown computer
  * turn off display
 
+## Overview
+
+To control macOS via MQTT using this project you need several elements:
+
+ * File `mac2mqtt` with compiled program (also known as 'binary' or 'executable)
+ * File with configuration `mac2mqtt.yaml`. You need to write this file yourself, but you can use file `mac2mqtt.yaml` stored in this repository as a base
+ * Some system that will start `mac2mqtt` automatically after macOS is restarted, you can also run `mac2mqtt` without this system, but you will need to start it manually after you restart macOS
+ * MQTT server (it is often called MQTT Broker)
+ * Some system what will read data from MQTT and send command to MQTT. Originally this project was created to make it possible to control macOS computer via [Home Assistant](https://www.home-assistant.io/), but any software that work with MQTT can be used with `mac2mqtt`.
+
+It is recommended to put executable file and configuration file in your home directory in the subdirectory `mac2mqtt`:
+
+```
+/Users/USERNAME/mac2mqtt/
+├── mac2mqtt
+└── mac2mqtt.yaml
+```
+
+## Installation
+
+There are several ways you can get `mac2mqtt` binary.
+
+### Use pre-compiled binaries
+
+Download the file from GitHub Releases section.
+
+Make sure to download the correct file for your architecture:
+
+ * `mac2mqtt_VERSION_arm64` — use this file for Apple Silicon Macs
+ * `mac2mqtt_VERSION_x86_64` — use this file for Intel-based Macs
+
+You need to make downloaded file executable `chmod +x FILE_NAME`.
+
+### Compile the source code yourself
+
+You need golang to be installed on your system — https://go.dev/doc/install
+
+ 1. Clone this repo
+ 2. `cd mac2mqtt/`
+ 3. `go build .`
+
+This will create file `mac2mqtt` that you can run.
+
 ## Running
 
-To run this program you need to put 2 files in a directory (`/Users/USERNAME/mac2mqtt/`):
+To run this program you need 2 files in a directory:
 
-    mac2mqtt
-    mac2mqtt.yaml
+```
+/Users/USERNAME/mac2mqtt/
+├── mac2mqtt
+└── mac2mqtt.yaml
+```
 
-Edit `mac2mqtt.yaml` (the sample file is in this repository), make binary executable (`chmod +x mac2mqtt`) and run `./mac2mqtt`:
+Take `mac2mqtt.yaml` that is stored in this repository, but edit it, and put your data into it.
+
+Then run `./mac2mqtt` in the terminal. You should see see somthing like this:
 
     $ ./mac2mqtt
     2021/04/12 10:37:28 Started
