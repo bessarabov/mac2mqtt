@@ -141,33 +141,30 @@ script:
           topic: "mac2mqtt/bessarabov-osx/command/displaysleep"
           payload: "displaysleep"
 
-sensor:
-  - platform: mqtt
-    name: air2_alive
-    icon: mdi:laptop
-    state_topic: "mac2mqtt/bessarabov-osx/status/alive"
+mqtt:
+  sensor:
+    - name: air2_alive
+      icon: mdi:laptop
+      state_topic: "mac2mqtt/bessarabov-osx/status/alive"
 
-  - platform: mqtt
-    name: "air2_battery"
-    icon: mdi:battery-high
-    unit_of_measurement: "%"
-    state_topic: "mac2mqtt/bessarabov-osx/status/battery"
+    - name: "air2_battery"
+      icon: mdi:battery-high
+      unit_of_measurement: "%"
+      state_topic: "mac2mqtt/bessarabov-osx/status/battery"
 
-switch:
-  - platform: mqtt
-    name: air2_mute
-    icon: mdi:volume-mute
-    state_topic: "mac2mqtt/bessarabov-osx/status/mute"
-    command_topic: "mac2mqtt/bessarabov-osx/command/mute"
-    payload_on: "true"
-    payload_off: "false"
+  switch:
+    - name: air2_mute
+      icon: mdi:volume-mute
+      state_topic: "mac2mqtt/bessarabov-osx/status/mute"
+      command_topic: "mac2mqtt/bessarabov-osx/command/mute"
+      payload_on: "true"
+      payload_off: "false"
 
-number:
-  - platform: mqtt
-    name: air2_volume
-    icon: mdi:volume-medium
-    state_topic: "mac2mqtt/bessarabov-osx/status/volume"
-    command_topic: "mac2mqtt/bessarabov-osx/command/volume"
+  number:
+    - name: air2_volume
+      icon: mdi:volume-medium
+      state_topic: "mac2mqtt/bessarabov-osx/status/volume"
+      command_topic: "mac2mqtt/bessarabov-osx/command/volume"
 ```
 
 `ui-lovelace.yaml`:
