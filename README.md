@@ -1,8 +1,8 @@
 # mac2mqtt
 
-`mac2mqtt` is a program that allow viewing and controlling some aspects of computers running macOS via MQTT.
+`mac2mqtt` is a program that allows viewing and controlling some aspects of computers running macOS via MQTT.
 
-It publish to MQTT:
+It publishes to MQTT:
 
  * current volume
  * volume mute state
@@ -22,8 +22,8 @@ You can send commands to MQTT to:
 To control macOS via MQTT using this project you need several elements:
 
  * File `mac2mqtt` with compiled program (also known as 'binary' or 'executable')
- * File with configuration `mac2mqtt.yaml`. You need to write this file yourself, but you can use file `mac2mqtt.yaml` stored in this repository as a base
- * Some system that will start `mac2mqtt` automatically after macOS is restarted, you can also run `mac2mqtt` without this system, but you will need to start it manually after you restart macOS
+ * File with configuration `mac2mqtt.yaml`. You need to write this file yourself, but you can use file `mac2mqtt.yaml` stored in this repository as a starting point
+ * A system that automatically launches mac2mqtt after macOS restarts. You can run `mac2mqtt` manually without such system, but in such case you need to start `mac2mqtt` every time after restarting macOS. Manually running mac2mqtt is a good starting point when setting up the project.
  * MQTT server (it is often called MQTT Broker)
  * Some system what will read data from MQTT and send command to MQTT. Originally this project was created to make it possible to control macOS computer via [Home Assistant](https://www.home-assistant.io/), but any software that work with MQTT can be used with `mac2mqtt`.
 
@@ -218,8 +218,9 @@ views:
 
 ## MQTT topics structure
 
-Program is working with several MQTT topics. All topix are prefixed with `mac2mqtt` + `COMPUTER_NAME`.
-For examaple, topic with current volume on my machine is `mac2mqtt/bessarabov-osx/status/volume`
+Program is working with several MQTT topics. All topix are prefixed with `mac2mqtt` + `/` + `COMPUTER_NAME`.
+For example, topic with current volume on my machine is `mac2mqtt/bessarabov-osx/status/volume`, in this
+case the PREFIX if `mac2mqtt/bessarabov-osx`.
 
 `mac2mqtt` send info to the topics `mac2mqtt/COMPUTER_NAME/status/#` and listen for commands in topics
 `mac2mqtt/COMPUTER_NAME/command/#`.
