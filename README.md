@@ -225,42 +225,50 @@ case the PREFIX if `mac2mqtt/bessarabov-osx`.
 `mac2mqtt` send info to the topics `mac2mqtt/COMPUTER_NAME/status/#` and listen for commands in topics
 `mac2mqtt/COMPUTER_NAME/command/#`.
 
-### PREFIX + `/status/alive`
+### Status MQTT topics
+
+`mac2mqtt` is sending data to those topics.
+
+#### PREFIX + `/status/alive`
 
 There can be `true` of `false` in this topic. If `mac2mqtt` is connected to MQTT server there is `true`.
 If `mac2mqtt` is disconnected from MQTT there is `false`. This is the standard MQTT thing called Last Will and Testament.
 
-### PREFIX + `/status/volume`
+#### PREFIX + `/status/volume`
 
 The value is the numbers from 0 (inclusive) to 100 (inclusive). The current volume of computer.
 
 The value of this topic is updated every 2 seconds.
 
-### PREFIX + `/status/mute`
+#### PREFIX + `/status/mute`
 
 There can be `true` of `false` in this topic. `true` means that the computer volume is muted (no sound),
 `false` means that it is not multed.
 
-### PREFIX + `/status/battery`
+#### PREFIX + `/status/battery`
 
 The value is the nuber up to 100. The charge percent of the battery.
 
 The value of this topic is updated every 60 seconds.
 
-### PREFIX + `/command/volume`
+### Control MQTT topics
+
+`mac2mqtt` is listening for those topics and executes the actions.
+
+##### PREFIX + `/command/volume`
 
 You can send integer numberf from 0 (inclusive) to 100 (inclusive) to this topic. It will set the volume on the computer.
 
-### PREFIX + `/command/mute`
+#### PREFIX + `/command/mute`
 
 You can send `true` of `false` to this topic. When you send `true` the computer is muted. When you send `false` the computer
 is unmuted.
 
-### PREFIX + `/command/sleep`
+#### PREFIX + `/command/sleep`
 
 You can send string `sleep` to this topic. It will put computer to sleep mode. Sending some other value will do nothing.
 
-### PREFIX + `/command/shutdown`
+#### PREFIX + `/command/shutdown`
 
 You can send string `shutdown` to this topic. It will try to shutdown the computer. The way it is done depends on
 the user who run the program. If the program is run by `root` the computer will shutdown, but if it is run by ordinary user
@@ -268,6 +276,6 @@ the computer will not shut down if there is other user who logged in.
 
 Sending some other value but `shutdown` will do nothing.
 
-### PREFIX + `/command/displaysleep`
+#### PREFIX + `/command/displaysleep`
 
 You can send string `displaysleep` to this topic. It will turn off display. Sending some other value will do nothing.
