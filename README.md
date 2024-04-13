@@ -255,7 +255,7 @@ The value of this topic is updated every 60 seconds.
 
 `mac2mqtt` is listening for those topics and executes the actions.
 
-##### PREFIX + `/command/volume`
+#### PREFIX + `/command/volume`
 
 You can send integer numberf from 0 (inclusive) to 100 (inclusive) to this topic. It will set the volume on the computer.
 
